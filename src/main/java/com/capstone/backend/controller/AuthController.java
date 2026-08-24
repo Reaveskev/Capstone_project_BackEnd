@@ -38,6 +38,8 @@ public class AuthController {
         user.setPasswordHash(passwordEncoder.encode(request.getPassword())); // hashed, never stored plain
         user.setEmail(request.getEmail());
         user.setRole(request.getRole() != null ? request.getRole() : "USER");
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
 
         userRepository.save(user);
         return ResponseEntity.ok("User registered successfully");
@@ -53,9 +55,13 @@ public class AuthController {
         }
 
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
-        return ResponseEntity.ok().body(new java.util.HashMap<String, String>() {{
-            put("token", token);
-            put("role", user.getRole());
-        }});
+        
+        java.util.Map<String, String> response = new java.util.HashMap<>();
+        response.put("token", token);
+        response.put("role", user.getRole());
+        response.put("firstName", user.getFirstName());
+        response.put("lastName", user.getLastName());
+
+        return ResponseEntity.ok(response);
     }
 }
