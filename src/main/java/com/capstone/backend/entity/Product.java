@@ -9,7 +9,7 @@ public class Product {
 
     @Id
     @Column(name = "sku")
-    private String sku;
+    private String sku; // notice this does not have @GeneratedValue, the UI has to provide it
 
     @Column(name = "productname", nullable = false)
     private String productName;
