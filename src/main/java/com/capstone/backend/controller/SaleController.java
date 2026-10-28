@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/sales")
@@ -69,6 +71,7 @@ public class SaleController {
         // Validate stock and compute subtotal
         BigDecimal subtotal = BigDecimal.ZERO;
         List<Product> productsToUpdate = new ArrayList<>();
+        Map<String, Product> productsBySku = new HashMap<>();
 
         for (SaleItemRequest item : request.getItems()) {
             Product product = productRepository.findById(item.getSku()).orElse(null);
@@ -78,8 +81,8 @@ public class SaleController {
             if (product.getStockLevel() < item.getQuantity()) {
                 return ResponseEntity.badRequest().body("Insufficient stock for " + item.getSku());
             }
-            subtotal = subtotal.add(item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
-            product.setStockLevel(product.getStockLevel() - item.getQuantity());
+            subtotal = subtotal.add(product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+            productsBySku.put(item.getSku(), product);
             productsToUpdate.add(product);
         }
 
@@ -112,11 +115,13 @@ public class SaleController {
         int lineNo = 1;
         for (SaleItemRequest item : request.getItems()) {
             SaleItem saleItem = new SaleItem();
+            Product product = productsBySku.get(item.getSku());
             saleItem.setSaleId(savedSale.getSaleId());
             saleItem.setLineNo(lineNo++);
             saleItem.setSku(item.getSku());
             saleItem.setQuantity(item.getQuantity());
-            saleItem.setUnitPrice(item.getUnitPrice());
+            product.setStockLevel(product.getStockLevel() - item.getQuantity());
+            saleItem.setUnitPrice(product.getPrice());
             saleItemRepository.save(saleItem);
         }
 
